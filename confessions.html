@@ -535,17 +535,46 @@
                     const commentText = document.getElementById(`comment-text-${confessionId}`).value.trim();
                     
                     if (commentText) {
-                        confessionData.addComment(confessionId, commentText);
-                        showNotification('Your comment has been posted anonymously!');
-                        document.getElementById(`comment-text-${confessionId}`).value = '';
+                        // Add comment to localStorage
+                        const newComment = confessionData.addComment(confessionId, commentText);
                         
-                        // Reload the page to show the new comment
-                        loadAllConfessions(currentSort);
-                        
-                        // Reopen comments section if it was open
-                        const commentsSection = document.getElementById(`comments-${confessionId}`);
-                        if (commentsSection) {
+                        if (newComment) {
+                            // Get updated confession data
+                            const updatedConfession = confessionData.getConfessions().find(c => c.id === confessionId);
+                            
+                            // Update comment count in action button
+                            const commentCountElement = document.querySelector(`.comment-btn[data-id="${confessionId}"] .comment-count`);
+                            commentCountElement.textContent = updatedConfession.comments.length;
+                            
+                            // Update comments section title
+                            const commentsSection = document.getElementById(`comments-${confessionId}`);
+                            const commentsTitle = commentsSection.querySelector('h3');
+                            commentsTitle.textContent = `Comments (${updatedConfession.comments.length})`;
+                            
+                            // Add new comment to the comments list
+                            const commentsList = commentsSection.querySelector('.comments-list');
+                            const newCommentElement = document.createElement('div');
+                            newCommentElement.className = 'comment';
+                            newCommentElement.innerHTML = `
+                                <div class="comment-meta">
+                                    <span><i class="fas fa-user-secret"></i> Anonymous</span>
+                                    <span>${newComment.date}</span>
+                                </div>
+                                <div class="comment-text">${newComment.text}</div>
+                            `;
+                            commentsList.appendChild(newCommentElement);
+                            
+                            // Clear the textarea
+                            document.getElementById(`comment-text-${confessionId}`).value = '';
+                            
+                            // Show notification
+                            showNotification('Your comment has been posted anonymously!');
+                            
+                            // Ensure comments section stays open
                             commentsSection.classList.add('open');
+                            
+                            // Scroll to the new comment
+                            newCommentElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                         }
                     }
                 });
