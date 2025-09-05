@@ -295,6 +295,7 @@
 
     <div id="notification" class="notification"></div>
 
+    <script src="data.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Load all confessions
@@ -320,66 +321,14 @@
         });
 
         function loadAllConfessions() {
-            // In a real app, this would fetch data from a server
-            // For demo, we'll use mock data
-            const allConfessions = [
-                {
-                    id: 1,
-                    text: "I have a huge crush on someone from the Physics department. I see them in the library every day but can't gather the courage to talk to them.",
-                    likes: 42,
-                    comments: 8,
-                    date: "2 days ago",
-                    commentsList: [
-                        { id: 101, text: "Just go talk to them! You'll regret it if you don't.", date: "1 day ago" },
-                        { id: 102, text: "I feel you. I've been in the same situation for months.", date: "1 day ago" }
-                    ]
-                },
-                {
-                    id: 2,
-                    text: "I secretly wish I had chosen Biology instead of Chemistry. I'm in my final year now and it's too late to switch.",
-                    likes: 28,
-                    comments: 5,
-                    date: "3 days ago",
-                    commentsList: [
-                        { id: 201, text: "It's never too late to learn what you love!", date: "2 days ago" }
-                    ]
-                },
-                {
-                    id: 3,
-                    text: "I've been skipping lectures to watch Netflix. I feel guilty but I can't stop. My grades are suffering but I'm addicted.",
-                    likes: 21,
-                    comments: 12,
-                    date: "5 days ago",
-                    commentsList: [
-                        { id: 301, text: "Try setting small goals for attending lectures. Reward yourself afterward.", date: "4 days ago" },
-                        { id: 302, text: "You're not alone. Many of us struggle with motivation.", date: "3 days ago" }
-                    ]
-                },
-                {
-                    id: 4,
-                    text: "I pretend to understand complex concepts in class but I'm completely lost. I'm too afraid to ask questions because everyone seems to get it.",
-                    likes: 35,
-                    comments: 7,
-                    date: "1 week ago",
-                    commentsList: [
-                        { id: 401, text: "Asking questions is a sign of strength, not weakness. Most people appreciate it.", date: "5 days ago" }
-                    ]
-                },
-                {
-                    id: 5,
-                    text: "I'm in a relationship but I have feelings for someone else. I feel terrible about it but I can't help how I feel.",
-                    likes: 19,
-                    comments: 15,
-                    date: "1 week ago",
-                    commentsList: [
-                        { id: 501, text: "Feelings are complicated. Try to understand what you really want.", date: "6 days ago" },
-                        { id: 502, text: "Talk to your partner. Honesty is important in relationships.", date: "5 days ago" }
-                    ]
-                }
-            ];
-            
+            const allConfessions = confessionData.getConfessions();
             const container = document.getElementById('allConfessions');
             container.innerHTML = '';
+            
+            if (allConfessions.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #6b7280;">No confessions yet. Be the first to share!</p>';
+                return;
+            }
             
             allConfessions.forEach(confession => {
                 const card = document.createElement('div');
@@ -392,20 +341,20 @@
                         <span>${confession.date}</span>
                     </div>
                     <div class="confession-actions">
-                        <button class="action-btn like-btn" data-id="${confession.id}">
+                        <button class="action-btn like-btn ${confession.liked ? 'liked' : ''}" data-id="${confession.id}">
                             <i class="fas fa-heart"></i> <span class="like-count">${confession.likes}</span>
                         </button>
                         <button class="action-btn comment-btn" data-id="${confession.id}">
-                            <i class="fas fa-comment"></i> <span class="comment-count">${confession.comments}</span>
+                            <i class="fas fa-comment"></i> <span class="comment-count">${confession.comments.length}</span>
                         </button>
                         <button class="action-btn share-btn" data-id="${confession.id}">
                             <i class="fas fa-share"></i> Share
                         </button>
                     </div>
                     <div class="comments-section" id="comments-${confession.id}">
-                        <h3>Comments (${confession.comments})</h3>
+                        <h3>Comments (${confession.comments.length})</h3>
                         <div class="comments-list">
-                            ${confession.commentsList.map(comment => `
+                            ${confession.comments.map(comment => `
                                 <div class="comment">
                                     <div class="comment-meta">
                                         <span><i class="fas fa-user-secret"></i> Anonymous</span>
@@ -427,18 +376,24 @@
             // Add event listeners to action buttons
             document.querySelectorAll('.like-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    const countElement = this.querySelector('.like-count');
-                    let count = parseInt(countElement.textContent);
+                    const confessionId = parseInt(this.dataset.id);
+                    const confession = confessionData.getConfessions().find(c => c.id === confessionId);
                     
-                    if (this.classList.contains('liked')) {
-                        count--;
-                        this.classList.remove('liked');
-                    } else {
-                        count++;
-                        this.classList.add('liked');
+                    if (confession) {
+                        const isLiked = this.classList.contains('liked');
+                        const newLikes = isLiked ? confession.likes - 1 : confession.likes + 1;
+                        
+                        confessionData.updateConfession(confessionId, { likes: newLikes });
+                        
+                        const countElement = this.querySelector('.like-count');
+                        countElement.textContent = newLikes;
+                        
+                        if (isLiked) {
+                            this.classList.remove('liked');
+                        } else {
+                            this.classList.add('liked');
+                        }
                     }
-                    
-                    countElement.textContent = count;
                 });
             });
             
@@ -462,28 +417,34 @@
             
             document.querySelectorAll('.share-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    // In a real app, this would open a share dialog
-                    showNotification('Link copied to clipboard!');
+                    const url = `${window.location.origin}/confessions.html?id=${this.dataset.id}`;
+                    navigator.clipboard.writeText(url).then(() => {
+                        showNotification('Link copied to clipboard!');
+                    }).catch(() => {
+                        showNotification('Failed to copy link');
+                    });
                 });
             });
             
             // Add event listeners to comment form buttons
             document.querySelectorAll('.comment-form .btn').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    const confessionId = this.dataset.id;
+                    const confessionId = parseInt(this.dataset.id);
                     const commentText = document.getElementById(`comment-text-${confessionId}`).value.trim();
                     
                     if (commentText) {
-                        // In a real app, this would be sent to a server
-                        // For demo, we'll just show a notification
+                        confessionData.addComment(confessionId, commentText);
                         showNotification('Your comment has been posted anonymously!');
                         document.getElementById(`comment-text-${confessionId}`).value = '';
                         
-                        // Update comment count
-                        const countElement = document.querySelector(`.comment-btn[data-id="${confessionId}"] .comment-count`);
-                        let count = parseInt(countElement.textContent);
-                        count++;
-                        countElement.textContent = count;
+                        // Reload the page to show the new comment
+                        loadAllConfessions();
+                        
+                        // Reopen comments section if it was open
+                        const commentsSection = document.getElementById(`comments-${confessionId}`);
+                        if (commentsSection) {
+                            commentsSection.classList.add('open');
+                        }
                     }
                 });
             });
