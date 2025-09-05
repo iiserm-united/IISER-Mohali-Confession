@@ -16,12 +16,14 @@ const confessionData = (function() {
     // Add a new confession
     function addConfession(text) {
         const confessions = getConfessions();
+        const now = new Date();
         const newConfession = {
-            id: Date.now(),
+            id: now.getTime(),
             text: text,
             likes: 0,
             comments: [],
-            date: new Date().toLocaleDateString()
+            date: now.toLocaleDateString(),
+            timestamp: now.getTime()
         };
         confessions.unshift(newConfession); // Add to beginning
         saveConfessions(confessions);
@@ -44,10 +46,12 @@ const confessionData = (function() {
     function addComment(confessionId, text) {
         const confession = updateConfession(confessionId, {});
         if (confession) {
+            const now = new Date();
             const newComment = {
-                id: Date.now(),
+                id: now.getTime(),
                 text: text,
-                date: new Date().toLocaleDateString()
+                date: now.toLocaleDateString(),
+                timestamp: now.getTime()
             };
             confession.comments.push(newComment);
             updateConfession(confessionId, { comments: confession.comments });
@@ -59,14 +63,40 @@ const confessionData = (function() {
     // Get top confessions sorted by likes and comments
     function getTopConfessions(limit = 3) {
         const confessions = getConfessions();
-        return confessions
-            .sort((a, b) => {
-                // First sort by likes
-                if (b.likes !== a.likes) return b.likes - a.likes;
-                // Then by number of comments
-                return b.comments.length - a.comments.length;
-            })
-            .slice(0, limit);
+        return sortConfessions(confessions, 'popularity').slice(0, limit);
+    }
+
+    // Sort confessions by different criteria
+    function sortConfessions(confessions, sortBy) {
+        const sorted = [...confessions];
+        
+        switch(sortBy) {
+            case 'date':
+                // Sort by timestamp (newest first)
+                sorted.sort((a, b) => b.timestamp - a.timestamp);
+                break;
+            case 'popularity':
+                // Sort by likes and comments (most popular first)
+                sorted.sort((a, b) => {
+                    const aScore = a.likes + a.comments.length;
+                    const bScore = b.likes + b.comments.length;
+                    return bScore - aScore;
+                });
+                break;
+            case 'likes':
+                // Sort by likes (most liked first)
+                sorted.sort((a, b) => b.likes - a.likes);
+                break;
+            case 'comments':
+                // Sort by comments (most commented first)
+                sorted.sort((a, b) => b.comments.length - a.comments.length);
+                break;
+            default:
+                // Default to newest first
+                sorted.sort((a, b) => b.timestamp - a.timestamp);
+        }
+        
+        return sorted;
     }
 
     return {
@@ -74,6 +104,7 @@ const confessionData = (function() {
         addConfession,
         updateConfession,
         addComment,
-        getTopConfessions
+        getTopConfessions,
+        sortConfessions
     };
 })();
