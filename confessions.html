@@ -1,200 +1,582 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // Set default sorting
-    let currentSort = 'date';
-    
-    // Load all confessions
-    confessionData.getConfessions(function(confessions) {
-        displayConfessions(confessionData.sortConfessions(confessions, currentSort));
-    });
-    
-    // Set up real-time updates
-    confessionData.onConfessionUpdate(function(confessions) {
-        displayConfessions(confessionData.sortConfessions(confessions, currentSort));
-    });
-    
-    // Add event listeners to sort buttons
-    document.querySelectorAll('.sort-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            // Update active button
-            document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Confessions - IISER Mohali Confession</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #1a56db;
+            --primary-dark: #1e40af;
+            --secondary: #dbeafe;
+            --light: #f3f4f6;
+            --dark: #1f2937;
+            --white: #ffffff;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: var(--white);
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .logo i {
+            font-size: 28px;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        nav a {
+            color: var(--white);
+            text-decoration: none;
+            margin: 0 15px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            transition: var(--transition);
+        }
+
+        nav a:hover, nav a.active {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--primary);
+            text-decoration: none;
+            margin-bottom: 20px;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .back-link:hover {
+            color: var(--primary-dark);
+        }
+
+        .section-title {
+            color: var(--primary-dark);
+            margin: 30px 0 20px;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sorting-container {
+            background-color: var(--white);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .sorting-options {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .sort-btn {
+            background: none;
+            border: 1px solid #d1d5db;
+            border-radius: 20px;
+            padding: 8px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .sort-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .sort-btn.active {
+            background-color: var(--primary);
+            color: var(--white);
+            border-color: var(--primary);
+        }
+
+        .confession-card {
+            background-color: var(--white);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .confession-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .confession-text {
+            margin-bottom: 15px;
+            line-height: 1.7;
+            font-size: 16px;
+        }
+
+        .confession-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .confession-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: none;
+            border: none;
+            color: #6b7280;
+            cursor: pointer;
+            font-size: 14px;
+            transition: var(--transition);
+        }
+
+        .action-btn:hover {
+            color: var(--primary);
+        }
+
+        .action-btn.liked {
+            color: var(--primary);
+        }
+
+        .comments-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease;
+        }
+
+        .comments-section.open {
+            max-height: 1000px;
+        }
+
+        .comment {
+            background-color: var(--light);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .comment-meta {
+            display: flex;
+            justify-content: space-between;
+            color: #6b7280;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .comment-text {
+            line-height: 1.5;
+        }
+
+        .comment-form {
+            margin-top: 20px;
+        }
+
+        .comment-form textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 80px;
+            transition: var(--transition);
+        }
+
+        .comment-form textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
+        }
+
+        .comment-form .btn {
+            margin-top: 10px;
+            font-size: 14px;
+            padding: 10px 20px;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--primary);
+            color: var(--white);
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: var(--transition);
+            z-index: 1000;
+        }
+
+        .notification.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        footer {
+            background-color: var(--primary-dark);
+            color: var(--white);
+            text-align: center;
+            padding: 20px 0;
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
             
-            // Update current sort and reload
-            currentSort = this.dataset.sort;
+            .confession-card {
+                padding: 20px;
+            }
+            
+            .sorting-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <i class="fas fa-heart"></i>
+                <span>IISER Mohali Confession</span>
+            </div>
+            <nav>
+                <a href="index.html">Home</a>
+                <a href="confessions.html" class="active">All Confessions</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <a href="index.html" class="back-link">
+            <i class="fas fa-arrow-left"></i> Back to Home
+        </a>
+
+        <h1 class="section-title">
+            <i class="fas fa-comments"></i>
+            All Confessions
+        </h1>
+
+        <div class="sorting-container">
+            <div>
+                <h3 style="margin-bottom: 10px;">Sort by:</h3>
+                <div class="sorting-options">
+                    <button class="sort-btn active" data-sort="date">
+                        <i class="fas fa-clock"></i> Newest
+                    </button>
+                    <button class="sort-btn" data-sort="popularity">
+                        <i class="fas fa-fire"></i> Popularity
+                    </button>
+                    <button class="sort-btn" data-sort="likes">
+                        <i class="fas fa-heart"></i> Most Liked
+                    </button>
+                    <button class="sort-btn" data-sort="comments">
+                        <i class="fas fa-comment"></i> Most Commented
+                    </button>
+                </div>
+            </div>
+            <div>
+                <span id="confessionCount" style="color: #6b7280; font-size: 14px;"></span>
+            </div>
+        </div>
+
+        <div id="allConfessions">
+            <!-- Confessions will be loaded here -->
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2023 IISER Mohali Confession. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <div id="notification" class="notification"></div>
+
+    <!-- Load Firebase configuration -->
+    <script src="firebase-config.js"></script>
+    
+    <!-- Load our data module -->
+    <script src="data.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set default sorting
+            let currentSort = 'date';
+            
+            // Load all confessions
             confessionData.getConfessions(function(confessions) {
                 displayConfessions(confessionData.sortConfessions(confessions, currentSort));
             });
-        });
-    });
-    
-    // Get confession ID from URL if provided
-    const urlParams = new URLSearchParams(window.location.search);
-    const confessionId = urlParams.get('id');
-    
-    if (confessionId) {
-        // Scroll to the specific confession and open comments
-        setTimeout(() => {
-            const confessionCard = document.querySelector(`[data-confession-id="${confessionId}"]`);
-            if (confessionCard) {
-                confessionCard.scrollIntoView({ behavior: 'smooth' });
-                const commentBtn = confessionCard.querySelector('.comment-btn');
-                if (commentBtn) {
-                    commentBtn.click();
-                }
-            }
-        }, 500);
-    }
-});
-
-function displayConfessions(confessions) {
-    const container = document.getElementById('allConfessions');
-    container.innerHTML = '';
-    
-    // Update confession count
-    document.getElementById('confessionCount').textContent = 
-        `${confessions.length} confession${confessions.length !== 1 ? 's' : ''}`;
-    
-    if (confessions.length === 0) {
-        container.innerHTML = `
-            <div style="text-align: center; padding: 40px; background-color: var(--white); border-radius: 12px; box-shadow: var(--shadow);">
-                <i class="fas fa-inbox" style="font-size: 48px; color: #d1d5db; margin-bottom: 15px;"></i>
-                <h3 style="color: var(--primary-dark); margin-bottom: 10px;">No confessions yet</h3>
-                <p style="color: #6b7280;">Be the first to share your thoughts anonymously!</p>
-                <a href="index.html" class="btn" style="margin-top: 15px; display: inline-block;">Submit Confession</a>
-            </div>
-        `;
-        return;
-    }
-    
-    confessions.forEach(confession => {
-        const card = document.createElement('div');
-        card.className = 'confession-card';
-        card.setAttribute('data-confession-id', confession.id);
-        card.innerHTML = `
-            <div class="confession-text">${confession.text}</div>
-            <div class="confession-meta">
-                <span><i class="fas fa-user-secret"></i> Anonymous</span>
-                <span>${confession.date}</span>
-            </div>
-            <div class="confession-actions">
-                <button class="action-btn like-btn ${confession.liked ? 'liked' : ''}" data-id="${confession.id}">
-                    <i class="fas fa-heart"></i> <span class="like-count">${confession.likes}</span>
-                </button>
-                <button class="action-btn comment-btn" data-id="${confession.id}">
-                    <i class="fas fa-comment"></i> <span class="comment-count">${confession.comments ? confession.comments.length : 0}</span>
-                </button>
-                <button class="action-btn share-btn" data-id="${confession.id}">
-                    <i class="fas fa-share"></i> Share
-                </button>
-            </div>
-            <div class="comments-section" id="comments-${confession.id}">
-                <h3>Comments (${confession.comments ? confession.comments.length : 0})</h3>
-                <div class="comments-list">
-                    ${(confession.comments ? Object.values(confession.comments).map(comment => `
-                        <div class="comment">
-                            <div class="comment-meta">
-                                <span><i class="fas fa-user-secret"></i> Anonymous</span>
-                                <span>${comment.date}</span>
-                            </div>
-                            <div class="comment-text">${comment.text}</div>
-                        </div>
-                    `).join('') : '')}
-                </div>
-                <div class="comment-form">
-                    <textarea placeholder="Write your comment anonymously..." id="comment-text-${confession.id}"></textarea>
-                    <button class="btn" data-id="${confession.id}">Post Comment</button>
-                </div>
-            </div>
-        `;
-        container.appendChild(card);
-    });
-    
-    // Add event listeners to action buttons
-    document.querySelectorAll('.like-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const confessionId = this.dataset.id;
-            const isLiked = this.classList.contains('liked');
-            const newLikes = isLiked ? -1 : 1;
             
-            confessionData.updateConfession(confessionId, { 
-                likes: firebase.database.ServerValue.increment(newLikes) 
-            })
-            .then(() => {
-                const countElement = this.querySelector('.like-count');
-                countElement.textContent = parseInt(countElement.textContent) + newLikes;
-                
-                if (isLiked) {
-                    this.classList.remove('liked');
-                } else {
-                    this.classList.add('liked');
-                }
-            })
-            .catch(error => {
-                showNotification('Error: ' + error.message);
+            // Set up real-time updates
+            confessionData.onConfessionUpdate(function(confessions) {
+                displayConfessions(confessionData.sortConfessions(confessions, currentSort));
             });
-        });
-    });
-    
-    document.querySelectorAll('.comment-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const confessionId = this.dataset.id;
-            const commentsSection = document.getElementById(`comments-${confessionId}`);
             
-            if (commentsSection.classList.contains('open')) {
-                commentsSection.classList.remove('open');
-            } else {
-                // Close all other comment sections
-                document.querySelectorAll('.comments-section').forEach(section => {
-                    section.classList.remove('open');
+            // Add event listeners to sort buttons
+            document.querySelectorAll('.sort-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Update active button
+                    document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Update current sort and reload
+                    currentSort = this.dataset.sort;
+                    confessionData.getConfessions(function(confessions) {
+                        displayConfessions(confessionData.sortConfessions(confessions, currentSort));
+                    });
                 });
-                
-                commentsSection.classList.add('open');
+            });
+            
+            // Get confession ID from URL if provided
+            const urlParams = new URLSearchParams(window.location.search);
+            const confessionId = urlParams.get('id');
+            
+            if (confessionId) {
+                // Scroll to the specific confession and open comments
+                setTimeout(() => {
+                    const confessionCard = document.querySelector(`[data-confession-id="${confessionId}"]`);
+                    if (confessionCard) {
+                        confessionCard.scrollIntoView({ behavior: 'smooth' });
+                        const commentBtn = confessionCard.querySelector('.comment-btn');
+                        if (commentBtn) {
+                            commentBtn.click();
+                        }
+                    }
+                }, 500);
             }
         });
-    });
-    
-    document.querySelectorAll('.share-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const url = `${window.location.origin}/confessions.html?id=${this.dataset.id}`;
-            navigator.clipboard.writeText(url).then(() => {
-                showNotification('Link copied to clipboard!');
-            }).catch(() => {
-                showNotification('Failed to copy link');
-            });
-        });
-    });
-    
-    // Add event listeners to comment form buttons
-    document.querySelectorAll('.comment-form .btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const confessionId = this.dataset.id;
-            const commentText = document.getElementById(`comment-text-${confessionId}`).value.trim();
+
+        function displayConfessions(confessions) {
+            const container = document.getElementById('allConfessions');
+            container.innerHTML = '';
             
-            if (commentText) {
-                confessionData.addComment(confessionId, commentText)
+            // Update confession count
+            document.getElementById('confessionCount').textContent = 
+                `${confessions.length} confession${confessions.length !== 1 ? 's' : ''}`;
+            
+            if (confessions.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; background-color: var(--white); border-radius: 12px; box-shadow: var(--shadow);">
+                        <i class="fas fa-inbox" style="font-size: 48px; color: #d1d5db; margin-bottom: 15px;"></i>
+                        <h3 style="color: var(--primary-dark); margin-bottom: 10px;">No confessions yet</h3>
+                        <p style="color: #6b7280;">Be the first to share your thoughts anonymously!</p>
+                        <a href="index.html" class="btn" style="margin-top: 15px; display: inline-block;">Submit Confession</a>
+                    </div>
+                `;
+                return;
+            }
+            
+            confessions.forEach(confession => {
+                const card = document.createElement('div');
+                card.className = 'confession-card';
+                card.setAttribute('data-confession-id', confession.id);
+                card.innerHTML = `
+                    <div class="confession-text">${confession.text}</div>
+                    <div class="confession-meta">
+                        <span><i class="fas fa-user-secret"></i> Anonymous</span>
+                        <span>${confession.date}</span>
+                    </div>
+                    <div class="confession-actions">
+                        <button class="action-btn like-btn ${confession.liked ? 'liked' : ''}" data-id="${confession.id}">
+                            <i class="fas fa-heart"></i> <span class="like-count">${confession.likes}</span>
+                        </button>
+                        <button class="action-btn comment-btn" data-id="${confession.id}">
+                            <i class="fas fa-comment"></i> <span class="comment-count">${confession.comments ? confession.comments.length : 0}</span>
+                        </button>
+                        <button class="action-btn share-btn" data-id="${confession.id}">
+                            <i class="fas fa-share"></i> Share
+                        </button>
+                    </div>
+                    <div class="comments-section" id="comments-${confession.id}">
+                        <h3>Comments (${confession.comments ? confession.comments.length : 0})</h3>
+                        <div class="comments-list">
+                            ${(confession.comments ? Object.values(confession.comments).map(comment => `
+                                <div class="comment">
+                                    <div class="comment-meta">
+                                        <span><i class="fas fa-user-secret"></i> Anonymous</span>
+                                        <span>${comment.date}</span>
+                                    </div>
+                                    <div class="comment-text">${comment.text}</div>
+                                </div>
+                            `).join('') : '')}
+                        </div>
+                        <div class="comment-form">
+                            <textarea placeholder="Write your comment anonymously..." id="comment-text-${confession.id}"></textarea>
+                            <button class="btn" data-id="${confession.id}">Post Comment</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            
+            // Add event listeners to action buttons
+            document.querySelectorAll('.like-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const confessionId = this.dataset.id;
+                    const isLiked = this.classList.contains('liked');
+                    const newLikes = isLiked ? -1 : 1;
+                    
+                    confessionData.updateConfession(confessionId, { 
+                        likes: firebase.database.ServerValue.increment(newLikes) 
+                    })
                     .then(() => {
-                        // Clear the textarea
-                        document.getElementById(`comment-text-${confessionId}`).value = '';
+                        const countElement = this.querySelector('.like-count');
+                        countElement.textContent = parseInt(countElement.textContent) + newLikes;
                         
-                        // Show notification
-                        showNotification('Your comment has been posted anonymously!');
-                        
-                        // The real-time update will refresh the comments
+                        if (isLiked) {
+                            this.classList.remove('liked');
+                        } else {
+                            this.classList.add('liked');
+                        }
                     })
                     .catch(error => {
                         showNotification('Error: ' + error.message);
                     });
-            }
-        });
-    });
-}
+                });
+            });
+            
+            document.querySelectorAll('.comment-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const confessionId = this.dataset.id;
+                    const commentsSection = document.getElementById(`comments-${confessionId}`);
+                    
+                    if (commentsSection.classList.contains('open')) {
+                        commentsSection.classList.remove('open');
+                    } else {
+                        // Close all other comment sections
+                        document.querySelectorAll('.comments-section').forEach(section => {
+                            section.classList.remove('open');
+                        });
+                        
+                        commentsSection.classList.add('open');
+                    }
+                });
+            });
+            
+            document.querySelectorAll('.share-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const url = `${window.location.origin}/confessions.html?id=${this.dataset.id}`;
+                    navigator.clipboard.writeText(url).then(() => {
+                        showNotification('Link copied to clipboard!');
+                    }).catch(() => {
+                        showNotification('Failed to copy link');
+                    });
+                });
+            });
+            
+            // Add event listeners to comment form buttons
+            document.querySelectorAll('.comment-form .btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const confessionId = this.dataset.id;
+                    const commentText = document.getElementById(`comment-text-${confessionId}`).value.trim();
+                    
+                    if (commentText) {
+                        confessionData.addComment(confessionId, commentText)
+                            .then(() => {
+                                // Clear the textarea
+                                document.getElementById(`comment-text-${confessionId}`).value = '';
+                                
+                                // Show notification
+                                showNotification('Your comment has been posted anonymously!');
+                                
+                                // The real-time update will refresh the comments
+                            })
+                            .catch(error => {
+                                showNotification('Error: ' + error.message);
+                            });
+                    }
+                });
+            });
+        }
 
-function showNotification(message) {
-    const notification = document.getElementById('notification');
-    notification.textContent = message;
-    notification.classList.add('show');
-    
-    setTimeout(() => {
-        notification.classList.remove('show');
-    }, 3000);
-}
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
