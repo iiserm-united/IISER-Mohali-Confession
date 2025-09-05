@@ -103,6 +103,49 @@
             gap: 10px;
         }
 
+        .sorting-container {
+            background-color: var(--white);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .sorting-options {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .sort-btn {
+            background: none;
+            border: 1px solid #d1d5db;
+            border-radius: 20px;
+            padding: 8px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .sort-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .sort-btn.active {
+            background-color: var(--primary);
+            color: var(--white);
+            border-color: var(--primary);
+        }
+
         .confession-card {
             background-color: var(--white);
             border-radius: 12px;
@@ -255,6 +298,11 @@
             .confession-card {
                 padding: 20px;
             }
+            
+            .sorting-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
@@ -282,6 +330,29 @@
             All Confessions
         </h1>
 
+        <div class="sorting-container">
+            <div>
+                <h3 style="margin-bottom: 10px;">Sort by:</h3>
+                <div class="sorting-options">
+                    <button class="sort-btn active" data-sort="date">
+                        <i class="fas fa-clock"></i> Newest
+                    </button>
+                    <button class="sort-btn" data-sort="popularity">
+                        <i class="fas fa-fire"></i> Popularity
+                    </button>
+                    <button class="sort-btn" data-sort="likes">
+                        <i class="fas fa-heart"></i> Most Liked
+                    </button>
+                    <button class="sort-btn" data-sort="comments">
+                        <i class="fas fa-comment"></i> Most Commented
+                    </button>
+                </div>
+            </div>
+            <div>
+                <span id="confessionCount" style="color: #6b7280; font-size: 14px;"></span>
+            </div>
+        </div>
+
         <div id="allConfessions">
             <!-- Confessions will be loaded here -->
         </div>
@@ -298,8 +369,24 @@
     <script src="data.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Set default sorting
+            let currentSort = 'date';
+            
             // Load all confessions
-            loadAllConfessions();
+            loadAllConfessions(currentSort);
+            
+            // Add event listeners to sort buttons
+            document.querySelectorAll('.sort-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Update active button
+                    document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Update current sort and reload
+                    currentSort = this.dataset.sort;
+                    loadAllConfessions(currentSort);
+                });
+            });
             
             // Get confession ID from URL if provided
             const urlParams = new URLSearchParams(window.location.search);
@@ -320,17 +407,29 @@
             }
         });
 
-        function loadAllConfessions() {
+        function loadAllConfessions(sortBy = 'date') {
             const allConfessions = confessionData.getConfessions();
+            const sortedConfessions = confessionData.sortConfessions(allConfessions, sortBy);
             const container = document.getElementById('allConfessions');
             container.innerHTML = '';
             
+            // Update confession count
+            document.getElementById('confessionCount').textContent = 
+                `${allConfessions.length} confession${allConfessions.length !== 1 ? 's' : ''}`;
+            
             if (allConfessions.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #6b7280;">No confessions yet. Be the first to share!</p>';
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; background-color: var(--white); border-radius: 12px; box-shadow: var(--shadow);">
+                        <i class="fas fa-inbox" style="font-size: 48px; color: #d1d5db; margin-bottom: 15px;"></i>
+                        <h3 style="color: var(--primary-dark); margin-bottom: 10px;">No confessions yet</h3>
+                        <p style="color: #6b7280;">Be the first to share your thoughts anonymously!</p>
+                        <a href="index.html" class="btn" style="margin-top: 15px; display: inline-block;">Submit Confession</a>
+                    </div>
+                `;
                 return;
             }
             
-            allConfessions.forEach(confession => {
+            sortedConfessions.forEach(confession => {
                 const card = document.createElement('div');
                 card.className = 'confession-card';
                 card.setAttribute('data-confession-id', confession.id);
@@ -393,6 +492,9 @@
                         } else {
                             this.classList.add('liked');
                         }
+                        
+                        // Reload to maintain sort order
+                        loadAllConfessions(currentSort);
                     }
                 });
             });
@@ -438,7 +540,7 @@
                         document.getElementById(`comment-text-${confessionId}`).value = '';
                         
                         // Reload the page to show the new comment
-                        loadAllConfessions();
+                        loadAllConfessions(currentSort);
                         
                         // Reopen comments section if it was open
                         const commentsSection = document.getElementById(`comments-${confessionId}`);
