@@ -262,10 +262,6 @@
             }
         }
     </style>
-    
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
 </head>
 <body>
     <header>
@@ -320,6 +316,10 @@
 
     <div id="notification" class="notification"></div>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+    
     <!-- Load Firebase configuration -->
     <script src="firebase-config.js"></script>
     
@@ -328,6 +328,12 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Check if Firebase is initialized
+            if (typeof firebase === 'undefined') {
+                showNotification('Firebase not loaded. Please check your internet connection.');
+                return;
+            }
+            
             // Load top confessions
             confessionData.getTopConfessions(3, function(topConfessions) {
                 displayTopConfessions(topConfessions);
