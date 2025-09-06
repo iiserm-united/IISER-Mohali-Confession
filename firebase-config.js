@@ -1,12 +1,12 @@
 // firebase-config.js
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "ACTUAL_API_KEY_HERE",
+  authDomain: "ACTUAL_AUTH_DOMAIN_HERE",
+  databaseURL: "ACTUAL_DATABASE_URL_HERE",
+  projectId: "ACTUAL_PROJECT_ID_HERE",
+  storageBucket: "ACTUAL_STORAGE_BUCKET_HERE",
+  messagingSenderId: "ACTUAL_MESSAGING_SENDER_ID_HERE",
+  appId: "ACTUAL_APP_ID_HERE"
 };
 
 // Initialize Firebase
